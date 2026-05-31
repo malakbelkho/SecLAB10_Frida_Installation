@@ -1,5 +1,5 @@
-frida-server
-frida-server*
+/frida-server
+/frida-server-*
 *.xz
 *.zip
 *.tar
