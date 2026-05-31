@@ -1,170 +1,121 @@
-# 🧪 LAB 10 — Guide d'installation de Frida
+<div align="center">
 
-> **Cours : Sécurité des applications mobiles**  
-> **Objectif principal :** installer Frida, déployer `frida-server` sur Android, tester la connexion et valider l’injection de scripts JavaScript dans une application Android.
+# 🧪 LAB 10 — Frida Installation & Android Instrumentation
 
----
+### Sécurité des Applications Mobiles
 
-## 📌 Objectifs du lab
+![Frida](https://img.shields.io/badge/Frida-17.9.11-blueviolet?style=for-the-badge)
+![Android](https://img.shields.io/badge/Android-Emulator-green?style=for-the-badge)
+![ADB](https://img.shields.io/badge/ADB-Platform_Tools-blue?style=for-the-badge)
+![PowerShell](https://img.shields.io/badge/Shell-PowerShell-5391FE?style=for-the-badge)
+![Status](https://img.shields.io/badge/Status-Completed-success?style=for-the-badge)
 
-Ce laboratoire a pour but de :
-
-- Installer Frida côté ordinateur avec Python et `frida-tools`.
-- Installer et vérifier ADB pour communiquer avec l’émulateur Android.
-- Identifier l’architecture CPU de l’appareil Android.
-- Télécharger et déployer la version compatible de `frida-server`.
-- Vérifier la connexion Frida avec l’émulateur.
-- Injecter un script Java minimal dans une application Android.
-- Injecter un script natif pour intercepter une fonction réseau.
-- Simuler une erreur de communication et documenter la correction.
+</div>
 
 ---
 
-## 🧰 Environnement utilisé
+## 🎯 Objectif du laboratoire
 
-| Élément | Détail |
+Ce laboratoire consiste à mettre en place un environnement complet d’analyse dynamique Android avec **Frida**.
+
+L’objectif principal est de :
+
+- installer le client Frida sur Windows ;
+- vérifier les outils Python, pip et Frida CLI ;
+- configurer ADB pour communiquer avec un émulateur Android ;
+- identifier l’architecture CPU de l’appareil cible ;
+- déployer et lancer `frida-server` sur Android ;
+- vérifier la connexion avec `frida-ps` ;
+- injecter un script JavaScript minimal ;
+- tester un hook natif sur une fonction réseau ;
+- simuler une panne et documenter la correction.
+
+---
+
+## 🧠 Résumé rapide du lab
+
+| Élément | Résultat |
 |---|---|
-| Système hôte | Windows |
-| Terminal | PowerShell |
-| Appareil cible | Android Emulator |
-| Identifiant appareil | `emulator-5554` |
-| Architecture Android | `x86_64` |
+| Client Frida installé | ✅ Oui |
 | Version Frida | `17.9.11` |
+| Appareil cible | Android Emulator |
+| Device ID | `emulator-5554` |
+| Architecture Android | `x86_64` |
+| Frida Server utilisé | `frida-server-17.9.11-android-x86_64` |
 | Application cible | `com.android.chrome` |
+| Injection Java | ✅ Réussie |
+| Hook natif `recv` | ✅ Réussi |
+| Dépannage | ✅ Réalisé |
 
-> L’application `ma.ens.app1` utilisée dans l’énoncé n’était pas installée sur l’émulateur.  
-> Les tests d’injection ont donc été réalisés sur **Chrome**, identifié par le package `com.android.chrome`.
+> L’application `ma.ens.app1` mentionnée dans l’énoncé n’était pas installée sur l’émulateur.  
+> Les tests d’injection ont donc été effectués sur **Google Chrome**, via le package `com.android.chrome`.
 
 ---
 
-## 📁 Structure du projet
+## 📁 Arborescence du projet
 
 ```text
 LAB10_Frida
-├───screenshots
-│       adb_forwarding.png
-│       adb_root_shell-id.png
-│       adb_version_devices.png
-│       correction_depannage.png
-│       cpu_architecture.png
-│       erreur_frida.png
-│       frida-ps_U.png
-│       frida-ps_Uai.png
-│       frida-server_extracted.png
-│       frida-server_run.png
-│       frida-server_run_verification.png
-│       frida_install.png
-│       frida_server_push_chmod.png
-│       frida_versions.png
-│       hello-js_injection.png
-│       hello_native-js_injection.png
-│       python_pip_version.png
+├── screenshots
+│   ├── adb_forwarding.png
+│   ├── adb_root_shell-id.png
+│   ├── adb_version_devices.png
+│   ├── correction_depannage.png
+│   ├── cpu_architecture.png
+│   ├── erreur_frida.png
+│   ├── frida-ps_U.png
+│   ├── frida-ps_Uai.png
+│   ├── frida-server_extracted.png
+│   ├── frida-server_run.png
+│   ├── frida-server_run_verification.png
+│   ├── frida_install.png
+│   ├── frida_server_push_chmod.png
+│   ├── frida_versions.png
+│   ├── hello-js_injection.png
+│   ├── hello_native-js_injection.png
+│   └── python_pip_version.png
 │
-└───scripts
-        hello.js
-        hello_native.js
-```
-# 🧪 LAB 10 — Guide d’installation de Frida
-
-> **Cours :** Sécurité des applications mobiles  
-> **Objectif principal :** installer Frida, déployer `frida-server` sur Android, tester la connexion et valider l’injection de scripts JavaScript dans une application Android.
-
----
-
-## 📌 Objectifs du lab
-
-Ce laboratoire a pour but de :
-
-- Installer Frida côté ordinateur avec Python et `frida-tools`.
-- Installer et vérifier ADB pour communiquer avec l’émulateur Android.
-- Identifier l’architecture CPU de l’appareil Android.
-- Télécharger et déployer la version compatible de `frida-server`.
-- Vérifier la connexion Frida avec l’émulateur.
-- Injecter un script Java minimal dans une application Android.
-- Injecter un script natif pour intercepter une fonction réseau.
-- Simuler une erreur de communication et documenter la correction.
-
----
-
-## 🧰 Environnement utilisé
-
-| Élément | Détail |
-|---|---|
-| Système hôte | Windows |
-| Terminal | PowerShell |
-| Appareil cible | Android Emulator |
-| Identifiant appareil | `emulator-5554` |
-| Architecture Android | `x86_64` |
-| Version Frida | `17.9.11` |
-| Application cible | `com.android.chrome` |
-
-> L’application `ma.ens.app1` utilisée dans l’énoncé n’était pas installée sur l’émulateur.  
-> Les tests d’injection ont donc été réalisés sur **Chrome**, identifié par le package `com.android.chrome`.
-
----
-
-## 📁 Structure du projet
-
-```text
-LAB10_Frida
-├───screenshots
-│       adb_forwarding.png
-│       adb_root_shell-id.png
-│       adb_version_devices.png
-│       correction_depannage.png
-│       cpu_architecture.png
-│       erreur_frida.png
-│       frida-ps_U.png
-│       frida-ps_Uai.png
-│       frida-server_extracted.png
-│       frida-server_run.png
-│       frida-server_run_verification.png
-│       frida_install.png
-│       frida_server_push_chmod.png
-│       frida_versions.png
-│       hello-js_injection.png
-│       hello_native-js_injection.png
-│       python_pip_version.png
-│
-└───scripts
-        hello.js
-        hello_native.js
+└── scripts
+    ├── hello.js
+    └── hello_native.js
 ```
 
 ---
 
-## 1. Vérification de Python et pip
+# 1. Préparation de l’environnement
 
-Avant d’installer Frida, j’ai vérifié que Python et pip étaient bien disponibles sur Windows.
+## 1.1 Vérification de Python et pip
+
+Avant d’installer Frida, j’ai vérifié la disponibilité de Python et pip sur Windows.
 
 ```powershell
 python --version
 pip --version
 ```
 
-📸 **Preuve :**
-
-![Python et pip](screenshots/python_pip_version.png)
+<p align="center">
+  <img src="screenshots/python_pip_version.png" width="850">
+</p>
 
 ---
 
-## 2. Installation de Frida
+## 1.2 Installation du client Frida
 
-Frida a été installé côté PC avec `pip`.
+Le client Frida correspond aux outils utilisés côté ordinateur : la bibliothèque Python `frida` et les outils CLI `frida-tools`.
 
 ```powershell
 python -m pip install --upgrade frida frida-tools
 ```
 
-📸 **Preuve :**
-
-![Installation Frida](screenshots/frida_install.png)
+<p align="center">
+  <img src="screenshots/frida_install.png" width="850">
+</p>
 
 ---
 
-## 3. Vérification des versions Frida
+## 1.3 Vérification des versions
 
-Après l’installation, j’ai vérifié les versions du client Frida, de `frida-ps` et de la bibliothèque Python.
+Après l’installation, les versions ont été vérifiées avec les commandes suivantes :
 
 ```powershell
 frida --version
@@ -178,51 +129,53 @@ Résultat obtenu :
 17.9.11
 ```
 
-📸 **Preuve :**
-
-![Versions Frida](screenshots/frida_versions.png)
+<p align="center">
+  <img src="screenshots/frida_versions.png" width="850">
+</p>
 
 ---
 
-## 4. Vérification d’ADB et de l’émulateur
+# 2. Configuration Android avec ADB
 
-ADB permet de communiquer avec l’appareil Android ou l’émulateur.
+## 2.1 Vérification d’ADB et de l’émulateur
+
+ADB permet d’établir la communication entre le PC et l’émulateur Android.
 
 ```powershell
 adb version
 adb devices
 ```
 
-L’émulateur a bien été détecté :
+L’émulateur a été détecté correctement :
 
 ```text
 emulator-5554   device
 ```
 
-📸 **Preuve :**
-
-![ADB devices](screenshots/adb_version_devices.png)
+<p align="center">
+  <img src="screenshots/adb_version_devices.png" width="850">
+</p>
 
 ---
 
-## 5. Accès root sur l’émulateur
+## 2.2 Activation de l’accès root
 
-Pour exécuter `frida-server` correctement, l’accès root a été activé sur l’émulateur.
+L’accès root est nécessaire pour lancer correctement `frida-server` dans l’environnement de test.
 
 ```powershell
 adb root
 adb shell id
 ```
 
-📸 **Preuve :**
-
-![ADB root](screenshots/adb_root_shell-id.png)
+<p align="center">
+  <img src="screenshots/adb_root_shell-id.png" width="850">
+</p>
 
 ---
 
-## 6. Identification de l’architecture Android
+## 2.3 Identification de l’architecture CPU Android
 
-Avant de télécharger `frida-server`, il faut connaître l’architecture CPU de l’appareil.
+Avant de télécharger `frida-server`, il faut identifier l’architecture CPU de l’émulateur.
 
 ```powershell
 adb shell getprop ro.product.cpu.abi
@@ -240,13 +193,15 @@ La version compatible est donc :
 frida-server-17.9.11-android-x86_64.xz
 ```
 
-📸 **Preuve :**
-
-![Architecture CPU](screenshots/cpu_architecture.png)
+<p align="center">
+  <img src="screenshots/cpu_architecture.png" width="850">
+</p>
 
 ---
 
-## 7. Téléchargement et extraction de `frida-server`
+# 3. Déploiement de `frida-server`
+
+## 3.1 Extraction du binaire
 
 Le fichier téléchargé était :
 
@@ -256,15 +211,15 @@ frida-server-17.9.11-android-x86_64.xz
 
 Après extraction, le binaire obtenu a été utilisé comme serveur Frida côté Android.
 
-📸 **Preuve :**
-
-![Extraction frida-server](screenshots/frida-server_extracted.png)
+<p align="center">
+  <img src="screenshots/frida-server_extracted.png" width="850">
+</p>
 
 ---
 
-## 8. Déploiement de `frida-server` sur Android
+## 3.2 Copie vers l’émulateur Android
 
-Le binaire a été copié dans `/data/local/tmp`, puis rendu exécutable.
+Le binaire a été transféré vers le répertoire `/data/local/tmp`.
 
 ```powershell
 adb push .\frida-server /data/local/tmp/frida-server
@@ -272,19 +227,19 @@ adb shell chmod 755 /data/local/tmp/frida-server
 adb shell ls -l /data/local/tmp/frida-server
 ```
 
-Les permissions obtenues montrent que le fichier est exécutable :
+Les permissions confirment que le fichier est exécutable :
 
 ```text
 -rwxr-xr-x
 ```
 
-📸 **Preuve :**
-
-![Push chmod frida-server](screenshots/frida_server_push_chmod.png)
+<p align="center">
+  <img src="screenshots/frida_server_push_chmod.png" width="850">
+</p>
 
 ---
 
-## 9. Lancement de `frida-server`
+## 3.3 Lancement de `frida-server`
 
 Le serveur Frida a été lancé sur l’émulateur Android.
 
@@ -292,74 +247,76 @@ Le serveur Frida a été lancé sur l’émulateur Android.
 adb shell "/data/local/tmp/frida-server -l 0.0.0.0"
 ```
 
-Une autre méthode utilisée pour le lancer en arrière-plan :
+Une autre méthode permet de le lancer en arrière-plan :
 
 ```powershell
 adb shell "nohup /data/local/tmp/frida-server -l 0.0.0.0 >/dev/null 2>&1 &"
 ```
 
-📸 **Preuve :**
-
-![Lancement frida-server](screenshots/frida-server_run.png)
+<p align="center">
+  <img src="screenshots/frida-server_run.png" width="850">
+</p>
 
 ---
 
-## 10. Vérification de l’exécution de `frida-server`
-
-Pour vérifier que Frida fonctionne bien, j’ai listé les processus Android depuis le PC.
+## 3.4 Vérification de l’exécution du serveur
 
 ```powershell
 frida-ps -U
 ```
 
-📸 **Preuve :**
-
-![frida-ps -U](screenshots/frida-ps_U.png)
+<p align="center">
+  <img src="screenshots/frida-ps_U.png" width="850">
+</p>
 
 ---
 
-## 11. Redirection des ports ADB
+## 3.5 Redirection des ports Frida
 
-Les ports utilisés par Frida ont été redirigés avec ADB.
+Les ports Frida ont été redirigés avec ADB.
 
 ```powershell
 adb forward tcp:27042 tcp:27042
 adb forward tcp:27043 tcp:27043
 ```
 
-📸 **Preuve :**
-
-![ADB forwarding](screenshots/adb_forwarding.png)
+<p align="center">
+  <img src="screenshots/adb_forwarding.png" width="850">
+</p>
 
 ---
 
-## 12. Liste des applications Android avec Frida
+# 4. Test de connexion Frida
 
-La commande suivante permet de lister les applications installées sur l’émulateur.
+La commande suivante permet de lister les applications Android depuis le PC.
 
 ```powershell
 frida-ps -Uai
 ```
 
-La sortie affichait plusieurs applications, dont :
+Plusieurs applications ont été listées, notamment :
 
-- Chrome
-- Camera
-- Settings
-- Messages
-- Photos
+| Application | État |
+|---|---|
+| Chrome | ✅ Visible |
+| Camera | ✅ Visible |
+| Settings | ✅ Visible |
+| Messages | ✅ Visible |
+| Photos | ✅ Visible |
 
-📸 **Preuve :**
+<p align="center">
+  <img src="screenshots/frida-ps_Uai.png" width="850">
+</p>
 
-![frida-ps -Uai](screenshots/frida-ps_Uai.png)
+Cette étape valide que le client Frida communique correctement avec `frida-server`.
 
 ---
 
-## 13. Injection Java minimale
+# 5. Injection Java minimale
 
-### 13.1 Création du script `hello.js`
+## 5.1 Script `hello.js`
 
-Le script suivant permet de vérifier que Frida peut exécuter du code JavaScript dans le runtime Java de l’application Android.
+Le premier script teste l’accès au runtime Java de l’application Android.
 
 ```javascript
 Java.perform(function () {
@@ -373,7 +330,9 @@ Fichier créé :
 scripts/hello.js
 ```
 
-### 13.2 Injection dans Chrome
+---
+
+## 5.2 Injection dans Chrome
 
 Commande utilisée :
 
@@ -387,17 +346,23 @@ Résultat attendu :
 [+] Frida Java.perform OK
 ```
 
-📸 **Preuve :**
+<p align="center">
+  <img src="screenshots/hello-js_injection.png" width="850">
+</p>
 
-![Injection hello.js](screenshots/hello-js_injection.png)
+Cette étape confirme que :
+
+- Frida peut démarrer l’application cible ;
+- le script JavaScript est chargé ;
+- l’API Java de Frida fonctionne dans le processus Android.
 
 ---
 
-## 14. Injection native avec hook sur `recv`
+# 6. Injection native avec hook sur `recv`
 
-### 14.1 Création du script `hello_native.js`
+## 6.1 Script `hello_native.js`
 
-Le script suivant intercepte la fonction native `recv`, utilisée lors de certaines réceptions réseau.
+Le second script intercepte la fonction native `recv`, utilisée lors de certaines opérations réseau.
 
 ```javascript
 console.log("[+] Script chargé");
@@ -425,7 +390,9 @@ Fichier créé :
 scripts/hello_native.js
 ```
 
-### 14.2 Injection dans Chrome
+---
+
+## 6.2 Injection dans Chrome
 
 Commande utilisée :
 
@@ -441,24 +408,24 @@ Résultat observé :
 [+] recv appelée
 ```
 
-Ce résultat confirme que :
+<p align="center">
+  <img src="screenshots/hello_native-js_injection.png" width="850">
+</p>
 
-- Frida a bien lancé l’application cible.
-- Le script natif a été chargé.
-- La fonction `recv` a été localisée.
-- Le hook a intercepté des appels réseau.
+Cette étape confirme que :
 
-📸 **Preuve :**
-
-![Injection hello_native.js](screenshots/hello_native-js_injection.png)
+- le script natif est chargé ;
+- la fonction `recv` est localisée ;
+- l’intercepteur Frida fonctionne ;
+- des appels réseau peuvent être observés dynamiquement.
 
 ---
 
-## 15. Dépannage : simulation d’une erreur Frida / ADB
+# 7. Dépannage : erreur Frida / ADB
 
-### 15.1 Simulation de l’erreur
+## 7.1 Simulation de l’erreur
 
-Pour simuler une panne de communication entre Frida et l’émulateur, le serveur ADB a été arrêté.
+Pour simuler une panne de communication, le serveur ADB a été arrêté.
 
 ```powershell
 adb disconnect
@@ -472,30 +439,37 @@ Résultat observé :
 Waiting for USB device to appear...
 ```
 
-Cette sortie montre que Frida ne parvient plus à détecter l’appareil Android.
+<p align="center">
+  <img src="screenshots/erreur_frida.png" width="850">
+</p>
 
-📸 **Preuve :**
-
-![Erreur Frida](screenshots/erreur_frida.png)
+Cette sortie indique que Frida ne peut plus détecter l’émulateur Android.
 
 ---
 
-### 15.2 Diagnostic
+## 7.2 Diagnostic
 
-Le problème vient de l’interruption de la communication ADB.  
-Sans ADB fonctionnel, Frida ne peut plus établir correctement la connexion avec l’émulateur Android.
-
-Commande de diagnostic :
+Le diagnostic consiste à vérifier l’état de la connexion ADB.
 
 ```powershell
 adb devices
 ```
 
+Lorsque le serveur ADB est arrêté ou que l’appareil n’est pas visible, Frida ne peut plus communiquer correctement avec l’émulateur.
+
 ---
 
-### 15.3 Correction
+## 7.3 Correction
 
-La correction a consisté à redémarrer ADB, vérifier l’appareil, rétablir l’accès root, relancer `frida-server`, puis restaurer les redirections de ports.
+La correction a consisté à :
+
+1. redémarrer ADB ;
+2. vérifier la présence de l’émulateur ;
+3. réactiver l’accès root ;
+4. restaurer `frida-server` ;
+5. relancer `frida-server` ;
+6. rétablir les ports Frida ;
+7. vérifier la connexion avec `frida-ps -Uai`.
 
 ```powershell
 adb start-server
@@ -510,31 +484,144 @@ adb forward tcp:27043 tcp:27043
 frida-ps -Uai
 ```
 
-La commande finale `frida-ps -Uai` a confirmé que Frida fonctionnait de nouveau.
+<p align="center">
+  <img src="screenshots/correction_depannage.png" width="850">
+</p>
 
-📸 **Preuve :**
-
-![Correction dépannage](screenshots/correction_depannage.png)
-
----
-
-## 16. Résultat final
-
-À la fin du lab :
-
-- Frida est installé sur Windows.
-- Les outils CLI Frida fonctionnent.
-- ADB détecte correctement l’émulateur Android.
-- L’architecture Android a été identifiée comme `x86_64`.
-- Le bon `frida-server` a été téléchargé et déployé.
-- La connexion Frida avec l’émulateur est fonctionnelle.
-- Un script Java a été injecté avec succès.
-- Un hook natif sur `recv` a été testé avec succès.
-- Une erreur de communication a été simulée, diagnostiquée et corrigée.
+La liste des applications est réapparue, ce qui confirme que la communication Frida a été restaurée.
 
 ---
 
-## 17. Commandes principales utilisées
+# 8. Bilan des livrables demandés
+
+| Livrable demandé | Réalisé | Preuve |
+|---|---:|---|
+| `frida --version` | ✅ | `frida_versions.png` |
+| `frida-ps --version` | ✅ | `frida_versions.png` |
+| `python -c "import frida; print(frida.__version__)"` | ✅ | `frida_versions.png` |
+| `adb devices` | ✅ | `adb_version_devices.png` |
+| Architecture CPU Android | ✅ | `cpu_architecture.png` |
+| Déploiement de `frida-server` | ✅ | `frida_server_push_chmod.png` |
+| Lancement de `frida-server` | ✅ | `frida-server_run.png` |
+| `frida-ps -Uai` avec au moins 3 apps | ✅ | `frida-ps_Uai.png` |
+| Injection `hello.js` | ✅ | `hello-js_injection.png` |
+| Hook natif `hello_native.js` | ✅ | `hello_native-js_injection.png` |
+| Erreur simulée | ✅ | `erreur_frida.png` |
+| Correction documentée | ✅ | `correction_depannage.png` |
+
+---
+
+# 9. Extensions avancées du lab
+
+Certaines parties de l’énoncé proposent une exploration plus avancée de Frida.  
+Elles permettent d’aller au-delà de l’installation et de l’injection minimale.
+
+## 9.1 Exploration interactive Frida
+
+Dans la console Frida, il est possible d’exécuter directement des commandes JavaScript :
+
+```javascript
+Process.arch
+Process.platform
+Process.id
+Process.mainModule
+Java.available
+Process.getModuleByName("libc.so")
+Process.getModuleByName("libc.so").getExportByName("recv")
+Process.enumerateModules()
+Process.enumerateThreads()
+Process.enumerateRanges('r-x')
+```
+
+Ces commandes permettent d’identifier :
+
+- l’architecture du processus ;
+- le module principal ;
+- les bibliothèques chargées ;
+- les threads actifs ;
+- les zones mémoire exécutables ;
+- la disponibilité du runtime Java.
+
+---
+
+## 9.2 Observation des fonctions réseau sensibles
+
+Des hooks plus avancés peuvent être utilisés pour observer les fonctions réseau natives :
+
+```javascript
+const connectPtr = Process.getModuleByName("libc.so").getExportByName("connect");
+const sendPtr = Process.getModuleByName("libc.so").getExportByName("send");
+const recvPtr = Process.getModuleByName("libc.so").getExportByName("recv");
+```
+
+Ces fonctions permettent d’observer :
+
+- les connexions réseau ;
+- les envois de données ;
+- les réceptions de données.
+
+---
+
+## 9.3 Observation du stockage local
+
+D’autres hooks peuvent cibler les fonctions natives liées aux fichiers :
+
+```javascript
+const openPtr = Process.getModuleByName("libc.so").getExportByName("open");
+const readPtr = Process.getModuleByName("libc.so").getExportByName("read");
+```
+
+Cela permet de repérer certains accès à des fichiers internes, préférences locales ou ressources applicatives.
+
+---
+
+## 9.4 Exploration Java : SharedPreferences, SQLite et Debug
+
+Frida peut aussi observer des composants Java sensibles :
+
+```javascript
+Java.available
+```
+
+Exemples de classes intéressantes :
+
+```text
+android.app.SharedPreferencesImpl
+android.database.sqlite.SQLiteDatabase
+android.os.Debug
+java.lang.Runtime
+java.io.File
+```
+
+Ces hooks permettent d’observer :
+
+- les lectures et écritures dans `SharedPreferences` ;
+- certaines requêtes SQLite ;
+- les vérifications liées au débogage ;
+- les commandes système lancées par l’application ;
+- les chemins de fichiers manipulés côté Java.
+
+> Ces extensions constituent une base pour des analyses dynamiques plus avancées : stockage local, communications réseau, chiffrement, debug detection et comportement runtime.
+
+---
+
+# 10. Bonnes pratiques et sécurité
+
+Frida est un outil puissant d’instrumentation dynamique.  
+Son utilisation doit rester strictement encadrée.
+
+Bonnes pratiques :
+
+- utiliser Frida uniquement sur ses propres applications ou dans un environnement autorisé ;
+- garder les versions du client Frida et de `frida-server` alignées ;
+- documenter toutes les commandes exécutées ;
+- conserver les captures d’écran comme preuves ;
+- ne pas analyser d’applications tierces sans autorisation ;
+- travailler dans un environnement de test isolé.
+
+---
+
+# 11. Commandes principales utilisées
 
 ```powershell
 python --version
@@ -567,31 +654,60 @@ frida-ps -Uai
 
 frida -U -f com.android.chrome -l .\scripts\hello.js
 frida -U -f com.android.chrome -l .\scripts\hello_native.js
+
+adb disconnect
+adb kill-server
+adb start-server
 ```
 
 ---
 
-## 18. Bonnes pratiques de sécurité
+# 12. Nettoyage optionnel
 
-Frida est un outil puissant d’instrumentation dynamique.  
-Il doit être utilisé uniquement dans un cadre autorisé :
+Pour arrêter `frida-server` :
 
-- sur ses propres applications ;
-- sur des applications de laboratoire ;
-- sur des environnements de test ;
-- avec l’autorisation explicite du propriétaire de l’application ou du système.
+```powershell
+adb shell pkill -f frida-server
+```
 
-Dans ce lab, tous les tests ont été réalisés dans un environnement contrôlé sur un émulateur Android.
+Pour supprimer le binaire de l’émulateur :
+
+```powershell
+adb shell rm /data/local/tmp/frida-server
+```
+
+Pour désinstaller Frida côté PC :
+
+```powershell
+pip uninstall frida frida-tools
+```
 
 ---
 
-## 19. Conclusion
+# 13. Conclusion
 
-Ce laboratoire m’a permis de mettre en place un environnement Frida complet pour l’analyse dynamique Android.
+Ce laboratoire m’a permis de mettre en place un environnement complet d’analyse dynamique Android avec Frida.
 
-J’ai installé les outils côté PC, déployé `frida-server` sur l’émulateur, validé la communication avec `frida-ps`, puis réalisé deux injections :
+Les étapes réalisées couvrent :
 
-- une injection au niveau Java avec `Java.perform` ;
-- une injection au niveau natif avec un hook sur la fonction `recv`.
+- l’installation du client Frida ;
+- la configuration d’ADB ;
+- l’identification de l’architecture Android ;
+- le déploiement de `frida-server` ;
+- la vérification de la communication Frida ;
+- l’injection d’un script Java ;
+- l’injection d’un hook natif ;
+- la simulation et la correction d’une erreur de communication.
 
-La partie dépannage a également permis de comprendre l’importance d’ADB et des redirections de ports dans la communication entre Frida et l’appareil Android.
+Le hook natif sur `recv` a confirmé que Frida peut intercepter dynamiquement des appels réseau dans un processus Android.  
+Ce lab constitue donc une base solide avant de passer à des analyses plus avancées comme l’observation du stockage local, des bibliothèques cryptographiques, des fonctions réseau sensibles ou des vérifications anti-debug.
+
+---
+
+<div align="center">
+
+## ✅ LAB 10 terminé avec succès
+
+**Frida Client + ADB + Frida Server + Injection Java + Hook Natif + Dépannage**
+
+</div>
