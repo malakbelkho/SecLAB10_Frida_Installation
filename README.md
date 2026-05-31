@@ -16,18 +16,20 @@
 
 ## 📌 Présentation du lab
 
-Ce laboratoire consiste à installer et configurer **Frida** pour réaliser une première analyse dynamique sur Android.
+Ce laboratoire consiste à installer et configurer **Frida** afin de réaliser une analyse dynamique Android dans un environnement contrôlé.
 
-L’objectif est de mettre en place un environnement complet permettant de :
+L’objectif est de mettre en place un workflow complet permettant de :
 
 - installer le client Frida côté Windows ;
 - vérifier Python, pip, Frida CLI et ADB ;
 - identifier l’architecture CPU de l’émulateur Android ;
-- télécharger et déployer le bon `frida-server` ;
-- vérifier la connexion Frida avec `frida-ps` ;
-- injecter un script JavaScript simple ;
+- télécharger et déployer la version compatible de `frida-server` ;
+- vérifier la communication entre le PC et l’émulateur ;
+- injecter un script JavaScript minimal ;
 - hooker des fonctions natives réseau et fichiers ;
-- observer des méthodes Java liées au stockage local et au runtime ;
+- explorer la console interactive Frida ;
+- observer des bibliothèques crypto/TLS et des classes Java sensibles ;
+- hooker des composants Java liés au stockage local et au runtime ;
 - simuler une erreur Frida/ADB et documenter sa correction.
 
 ---
@@ -46,7 +48,9 @@ L’objectif est de mettre en place un environnement complet permettant de :
 | Application cible | `com.android.chrome` |
 | Injection Java | ✅ Réussie |
 | Hook natif `recv` | ✅ Réussi |
-| Hooks avancés | ✅ Réalisés |
+| Console interactive | ✅ Explorée |
+| Hooks natifs avancés | ✅ Réalisés |
+| Hooks Java avancés | ✅ Réalisés |
 | Dépannage | ✅ Simulé et corrigé |
 
 > L’application `ma.ens.app1` mentionnée dans l’énoncé n’était pas installée sur l’émulateur.  
@@ -65,6 +69,7 @@ LAB10_Frida
 │       adb_forwarding.png
 │       adb_root_shell-id.png
 │       adb_version_devices.png
+│       console_crypto_classes.png
 │       console_modules_1.png
 │       console_modules_2.png
 │       console_modules_3.png
@@ -123,7 +128,7 @@ LAB10_Frida
 
 ## 1.1 Vérification de Python et pip
 
-Avant d’installer Frida, j’ai vérifié que Python et pip étaient bien disponibles.
+Avant d’installer Frida, j’ai vérifié que Python et pip étaient disponibles sur Windows.
 
 ```powershell
 python --version
@@ -138,7 +143,7 @@ pip --version
 
 ## 1.2 Installation du client Frida
 
-Frida a été installé côté ordinateur avec `pip`.
+Le client Frida correspond aux outils utilisés côté ordinateur : la bibliothèque Python `frida` et les outils CLI `frida-tools`.
 
 ```powershell
 python -m pip install --upgrade frida frida-tools
@@ -152,7 +157,7 @@ python -m pip install --upgrade frida frida-tools
 
 ## 1.3 Vérification des versions Frida
 
-Les versions du client Frida, de `frida-ps` et de la bibliothèque Python ont été vérifiées.
+Après l’installation, les versions du client Frida, de `frida-ps` et de la bibliothèque Python ont été vérifiées.
 
 ```powershell
 frida --version
@@ -212,7 +217,7 @@ adb shell id
 
 ## 2.3 Identification de l’architecture CPU
 
-Avant de télécharger `frida-server`, j’ai identifié l’architecture CPU de l’émulateur.
+Avant de télécharger `frida-server`, l’architecture CPU de l’émulateur a été identifiée.
 
 ```powershell
 adb shell getprop ro.product.cpu.abi
@@ -282,7 +287,7 @@ Le serveur Frida a été lancé sur l’émulateur Android.
 adb shell "/data/local/tmp/frida-server -l 0.0.0.0"
 ```
 
-Ou en arrière-plan :
+Une autre méthode utilisée permet de le lancer en arrière-plan :
 
 ```powershell
 adb shell "nohup /data/local/tmp/frida-server -l 0.0.0.0 >/dev/null 2>&1 &"
@@ -294,7 +299,9 @@ adb shell "nohup /data/local/tmp/frida-server -l 0.0.0.0 >/dev/null 2>&1 &"
 
 ---
 
-## 3.4 Vérification du serveur
+## 3.4 Vérification de `frida-server`
+
+Une première vérification a été réalisée avec :
 
 ```powershell
 frida-ps -U
@@ -304,11 +311,17 @@ frida-ps -U
   <img src="screenshots/frida-ps_U.png" width="850">
 </p>
 
+Une vérification supplémentaire a également été réalisée pour confirmer que `frida-server` était bien opérationnel.
+
+<p align="center">
+  <img src="screenshots/frida-server_run_verification.png" width="850">
+</p>
+
 ---
 
 ## 3.5 Redirection des ports ADB
 
-Les ports utilisés par Frida ont été redirigés.
+Les ports utilisés par Frida ont été redirigés avec ADB.
 
 ```powershell
 adb forward tcp:27042 tcp:27042
@@ -430,11 +443,11 @@ Cette étape confirme que Frida peut intercepter une fonction native dans un pro
 
 ---
 
-# 7. Console interactive Frida
+# 7. Exploration de la console interactive Frida
 
 Après l’attachement à un processus, Frida ouvre une console interactive permettant d’exécuter des commandes JavaScript directement dans le processus cible.
 
-## 7.1 Commandes utilisées
+## 7.1 Commandes d’inspection utilisées
 
 ```javascript
 Process.arch
@@ -449,13 +462,30 @@ Process.enumerateThreads().slice(0, 5)
 Process.enumerateRanges('r-x').slice(0, 5)
 ```
 
+Ces commandes permettent d’observer :
+
+- l’architecture du processus ;
+- la plateforme ;
+- l’identifiant du processus ;
+- le module principal ;
+- la disponibilité du runtime Java ;
+- la présence de `libc.so` ;
+- l’adresse de la fonction native `recv` ;
+- les modules chargés ;
+- les threads actifs ;
+- les zones mémoire exécutables.
+
+---
+
 ## 7.2 Informations du processus
 
 <p align="center">
   <img src="screenshots/console_process_info.png" width="850">
 </p>
 
-## 7.3 Modules et bibliothèques chargées
+---
+
+## 7.3 Modules, threads et zones mémoire
 
 <table>
 <tr>
@@ -467,15 +497,50 @@ Process.enumerateRanges('r-x').slice(0, 5)
 </tr>
 </table>
 
-Cette exploration permet d’observer :
+---
 
-- l’architecture du processus ;
-- la plateforme ;
-- l’identifiant du processus ;
-- les modules chargés ;
-- les bibliothèques système ;
-- les zones mémoire exécutables ;
-- la disponibilité du runtime Java.
+## 7.4 Recherche de bibliothèques crypto/TLS et classes Java sensibles
+
+J’ai filtré les bibliothèques dont le nom contient `ssl`, `crypto` ou `boring`.
+
+```javascript
+Process.enumerateModules().filter(m =>
+  m.name.toLowerCase().indexOf("ssl") !== -1 ||
+  m.name.toLowerCase().indexOf("crypto") !== -1 ||
+  m.name.toLowerCase().indexOf("boring") !== -1
+).map(m => m.name)
+```
+
+J’ai également énuméré certaines classes Java chargées dont le nom peut être lié à la sécurité, au debug, au stockage ou au chiffrement.
+
+```javascript
+Java.perform(function () {
+  Java.enumerateLoadedClasses({
+    onMatch: function (name) {
+      var n = name.toLowerCase();
+      if (
+        n.indexOf("debug") !== -1 ||
+        n.indexOf("root") !== -1 ||
+        n.indexOf("security") !== -1 ||
+        n.indexOf("crypto") !== -1 ||
+        n.indexOf("sqlite") !== -1 ||
+        n.indexOf("prefs") !== -1
+      ) {
+        console.log(name);
+      }
+    },
+    onComplete: function () {
+      console.log("Fin de l'énumération");
+    }
+  });
+});
+```
+
+<p align="center">
+  <img src="screenshots/console_crypto_classes.png" width="850">
+</p>
+
+Cette étape permet de repérer rapidement les composants liés au chiffrement, au stockage local, au debug et aux mécanismes de sécurité.
 
 ---
 
@@ -504,11 +569,17 @@ frida -U -f com.android.chrome -l .\scripts\hook_connect.js
 <img src="screenshots/hook-connect_script.png" width="420">
 </td>
 <td align="center">
-<b>Exécution</b><br>
+<b>Exécution limitée anti-spam</b><br>
 <img src="screenshots/hook-connect_nospam.png" width="420">
 </td>
 </tr>
 </table>
+
+Une première exécution complète du hook `connect` a aussi été capturée avant la version limitée.
+
+<p align="center">
+  <img src="screenshots/hook-connect-executed.png" width="850">
+</p>
 
 Résultat observé :
 
@@ -520,6 +591,8 @@ fd = ...
 sockaddr = ...
 retour = 0
 ```
+
+Ce hook confirme que l’application initie des connexions réseau pendant son exécution.
 
 ---
 
@@ -561,6 +634,8 @@ Résultat observé :
 [+] send appelée #1
 [+] recv appelée #1
 ```
+
+Cette étape montre que Frida peut observer des appels réseau natifs liés à l’envoi et à la réception de données.
 
 ---
 
@@ -762,6 +837,8 @@ android.os.Debug.isDebuggerConnected()
 android.os.Debug.waitingForDebugger()
 ```
 
+Le hook a été chargé correctement, même si Chrome n’a pas déclenché ces méthodes pendant le court test.
+
 ---
 
 ## 9.5 Hook Runtime.exec
@@ -799,6 +876,8 @@ Le hook a été chargé correctement :
 [+] Hook Runtime.exec chargé
 [+] Méthodes Runtime.exec surveillées
 ```
+
+Chrome n’a pas déclenché `Runtime.exec()` pendant le court test, mais le hook est bien installé.
 
 ---
 
@@ -916,22 +995,37 @@ La liste des applications est réapparue, ce qui confirme que la connexion Frida
 | Vérification ADB | ✅ | `adb_version_devices.png` |
 | Accès root | ✅ | `adb_root_shell-id.png` |
 | Architecture CPU | ✅ | `cpu_architecture.png` |
+| Extraction `frida-server` | ✅ | `frida-server_extracted.png` |
 | Déploiement `frida-server` | ✅ | `frida_server_push_chmod.png` |
 | Lancement `frida-server` | ✅ | `frida-server_run.png` |
+| Vérification `frida-server` | ✅ | `frida-server_run_verification.png` |
 | `frida-ps -U` | ✅ | `frida-ps_U.png` |
 | `frida-ps -Uai` | ✅ | `frida-ps_Uai.png` |
+| Redirection ports ADB | ✅ | `adb_forwarding.png` |
 | Injection Java `hello.js` | ✅ | `hello-js_injection.png` |
 | Hook natif `recv` | ✅ | `hello_native-js_injection.png` |
-| Console interactive | ✅ | `console_process_info.png` |
-| Hook `connect` | ✅ | `hook-connect_nospam.png` |
+| Console interactive — process info | ✅ | `console_process_info.png` |
+| Console interactive — modules | ✅ | `console_modules_1.png`, `console_modules_2.png`, `console_modules_3.png` |
+| Crypto/TLS + classes Java sensibles | ✅ | `console_crypto_classes.png` |
+| Hook `connect` complet | ✅ | `hook-connect-executed.png` |
+| Hook `connect` anti-spam | ✅ | `hook-connect_nospam.png` |
+| Script `connect` | ✅ | `hook-connect_script.png` |
 | Hook `send` / `recv` | ✅ | `hook-network_executed.png` |
+| Script réseau | ✅ | `hook-network_script.png` |
 | Hook fichiers natifs | ✅ | `hook-file_executed.png` |
+| Script fichiers natifs | ✅ | `hook-file_script.png` |
 | Hook SharedPreferences read | ✅ | `hook-prefs_executed.png` |
+| Script SharedPreferences read | ✅ | `hook-prefs_script.png` |
 | Hook SharedPreferences write | ✅ | `hook-prefs-write_executed.png` |
+| Script SharedPreferences write | ✅ | `hook-prefs-write_script.png` |
 | Hook SQLite | ✅ | `hook-sqlite_executed.png` |
+| Script SQLite | ✅ | `hook-sqlite_script.png` |
 | Hook Debug | ✅ | `hook-debug_executed.png` |
+| Script Debug | ✅ | `hook-debug_script.png` |
 | Hook Runtime.exec | ✅ | `hook-runtime_executed.png` |
+| Script Runtime.exec | ✅ | `hook-runtime_script.png` |
 | Hook Java File | ✅ | `hook-file-java_executed.png` |
+| Script Java File | ✅ | `hook-file-java_script.png` |
 | Erreur simulée | ✅ | `erreur_frida.png` |
 | Correction documentée | ✅ | `correction_depannage.png` |
 
@@ -971,6 +1065,7 @@ frida-ps -Uai
 frida -U -f com.android.chrome -l .\scripts\hello.js
 frida -U -f com.android.chrome -l .\scripts\hello_native.js
 
+frida -U -f com.android.chrome
 frida -U -f com.android.chrome -l .\scripts\hook_connect.js
 frida -U -f com.android.chrome -l .\scripts\hook_network.js
 frida -U -f com.android.chrome -l .\scripts\hook_file.js
@@ -980,11 +1075,63 @@ frida -U -f com.android.chrome -l .\scripts\hook_sqlite.js
 frida -U -f com.android.chrome -l .\scripts\hook_debug.js
 frida -U -f com.android.chrome -l .\scripts\hook_runtime.js
 frida -U -f com.android.chrome -l .\scripts\hook_file_java.js
+
+adb disconnect
+adb kill-server
+adb start-server
 ```
 
 ---
 
-# 13. Nettoyage optionnel
+# 13. Commandes interactives Frida utilisées
+
+```javascript
+Process.arch
+Process.platform
+Process.id
+Process.mainModule
+Java.available
+Process.getModuleByName("libc.so")
+Process.getModuleByName("libc.so").getExportByName("recv")
+Process.enumerateModules().slice(0, 10).map(m => m.name)
+Process.enumerateThreads().slice(0, 5)
+Process.enumerateRanges('r-x').slice(0, 5)
+```
+
+```javascript
+Process.enumerateModules().filter(m =>
+  m.name.toLowerCase().indexOf("ssl") !== -1 ||
+  m.name.toLowerCase().indexOf("crypto") !== -1 ||
+  m.name.toLowerCase().indexOf("boring") !== -1
+).map(m => m.name)
+```
+
+```javascript
+Java.perform(function () {
+  Java.enumerateLoadedClasses({
+    onMatch: function (name) {
+      var n = name.toLowerCase();
+      if (
+        n.indexOf("debug") !== -1 ||
+        n.indexOf("root") !== -1 ||
+        n.indexOf("security") !== -1 ||
+        n.indexOf("crypto") !== -1 ||
+        n.indexOf("sqlite") !== -1 ||
+        n.indexOf("prefs") !== -1
+      ) {
+        console.log(name);
+      }
+    },
+    onComplete: function () {
+      console.log("Fin de l'énumération");
+    }
+  });
+});
+```
+
+---
+
+# 14. Nettoyage optionnel
 
 Arrêter `frida-server` :
 
@@ -1006,7 +1153,7 @@ pip uninstall frida frida-tools
 
 ---
 
-# 14. Bonnes pratiques de sécurité
+# 15. Bonnes pratiques de sécurité
 
 Frida est un outil puissant d’instrumentation dynamique.  
 Son utilisation doit rester limitée à un cadre autorisé.
@@ -1022,7 +1169,7 @@ Bonnes pratiques :
 
 ---
 
-# 15. Conclusion
+# 16. Conclusion
 
 Ce laboratoire m’a permis de mettre en place un environnement Frida complet pour l’analyse dynamique Android.
 
@@ -1036,9 +1183,12 @@ Les étapes réalisées couvrent :
 - l’injection d’un script Java ;
 - l’injection d’un hook natif ;
 - l’exploration de la console interactive Frida ;
+- l’observation de bibliothèques crypto/TLS ;
+- l’énumération de classes Java sensibles ;
 - l’observation de fonctions réseau natives ;
 - l’observation d’accès fichiers natifs ;
-- l’observation de composants Java liés au stockage local et au runtime ;
+- l’observation de composants Java liés au stockage local ;
+- l’observation de composants Java liés au runtime ;
 - la simulation et la correction d’une erreur ADB/Frida.
 
 Ce lab constitue une base solide pour comprendre comment Frida peut être utilisé dans une démarche d’analyse dynamique mobile, en observant à la fois le niveau Java et le niveau natif d’une application Android.
@@ -1049,6 +1199,6 @@ Ce lab constitue une base solide pour comprendre comment Frida peut être utilis
 
 ## ✅ LAB 10 terminé avec succès
 
-**Frida Client + ADB + Frida Server + Injection Java + Hooks natifs + Hooks Java + Dépannage**
+**Frida Client + ADB + Frida Server + Console Interactive + Injection Java + Hooks Natifs + Hooks Java + Dépannage**
 
 </div>
