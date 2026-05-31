@@ -1,0 +1,9 @@
+frida-server
+frida-server*
+*.xz
+*.zip
+*.tar
+*.tar.xz
+__pycache__/
+.DS_Store
+Thumbs.db
