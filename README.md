@@ -212,7 +212,7 @@ frida-server-17.9.11-android-x86_64.xz
 Après extraction, le binaire obtenu a été utilisé comme serveur Frida côté Android.
 
 <p align="center">
-  <img src="screenshots/frida-server_extracted.png" width="850">
+  <img src="screenshots/frida-server_extracted.png">
 </p>
 
 ---
@@ -254,7 +254,7 @@ adb shell "nohup /data/local/tmp/frida-server -l 0.0.0.0 >/dev/null 2>&1 &"
 ```
 
 <p align="center">
-  <img src="screenshots/frida-server_run.png" width="850">
+  <img src="screenshots/frida-server_run.png">
 </p>
 
 ---
